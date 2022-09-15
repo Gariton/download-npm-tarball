@@ -1,7 +1,7 @@
 const { packageController, existsFileFolder } = require('./util');
 const fs = require('fs').promises;
 
-global.GlobalPackageList = [];
+global.history = [];
 
 async function main () {
     try {
@@ -10,9 +10,9 @@ async function main () {
 
         //historyファイルがなければ作成
         if (!await existsFileFolder('./history.json')) {
-            await fs.writeFile('./history.json', '[]');
+            await fs.writeFile('./history.json', '{}');
         }
-        GlobalPackageList = JSON.parse(await fs.readFile('./history.json', 'utf8'));
+        history = JSON.parse(await fs.readFile('./history.json', 'utf8'));
 
         //outputsフォルダをなければ作成
         if (!await existsFileFolder('./outputs')) {
@@ -42,10 +42,9 @@ async function main () {
             let info = await p.info();
             console.log(`    ┣ ${p.packageName}(バージョン数:${info.versions.length})のすべての依存関係を取得...`);
             let deps = await p.getAllDeps(2);
-            GlobalPackageList = Array.from(new Set([...GlobalPackageList, ...deps]));
         }
 
-        await fs.writeFile('./history.json', JSON.stringify(GlobalPackageList));
+        await fs.writeFile('./history.json', JSON.stringify(history));
 
         let end = performance.now();
         console.log(`実行時間(ms) : `+ (end - start));
