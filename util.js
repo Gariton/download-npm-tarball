@@ -1,5 +1,6 @@
 const { execSync } = require('child_process');
 const fs = require('fs').promises;
+const readline = require('readline');
 
 class packageController {
     constructor (packageName) {
@@ -25,6 +26,7 @@ class packageController {
 
     async getAllDeps (tab=1) {
         try {
+            const progressLength = 40;
             if (!Object.keys(history).includes(this.packageName)) {
                 //初めてのパッケージ名
                 history[this.packageName] = {versions: []};
@@ -32,31 +34,28 @@ class packageController {
             
             let info = await this.info();
             let deps = [];
-            console.log(`    ┃${'    '.repeat(tab)}┣ ${this.packageName}依存関係を検索開始...`);
+            process.stdout.write(`    ┃${'    '.repeat(tab)}┣ ${this.packageName}(バージョン数:${info.versions.length})依存関係を検索開始...\n`);
             let counter = 1;
             for (let version of info.versions ?? []) {
                 //historyを保存
-                if (history[this.packageName].versions.includes(version)) {
-                    //すでに調査済み
-                    console.log(`    ┃${'    '.repeat(tab)}┃ (${counter}/${info.versions.length}) \x1b[34m${version}調査済み\x1b[39m`);
-                } else {
+                if (!history[this.packageName].versions.includes(version)) {
                     //このバージョンは初めて
                     //バージョンごとに処理
-                    let dlStart = performance.now();
                     this.download('./outputs', version);
-                    let dlEnd = performance.now();
-                    let dlTime = dlEnd - dlStart;
-                    console.log(`    ┃${'    '.repeat(tab)}┃ (${counter}/${info.versions.length}) \x1b[32m${version}処理完了(${dlTime}ms)\x1b[39m`);
-                    let pkg = new packageController(this.packageName);
-                    let packageInfo = await pkg.info(version);
-                    deps.push(Object.keys(packageInfo.dependencies??{}));
                     history[this.packageName].versions.push(version);
                     await fs.writeFile('./history.json', JSON.stringify(history));
                 }
+                let done = Math.floor((counter/info.versions.length)*progressLength);
+                readline.cursorTo(process.stdout, 0);
+                process.stdout.write(`    ┃${'    '.repeat(tab)}┃ 【\x1b[32m${'='.repeat(done)}\x1b[39m${'-'.repeat(progressLength-done)}】(${counter}/${info.versions.length}) 処理完了`);
+                let pkg = new packageController(this.packageName);
+                let packageInfo = await pkg.info(version);
+                deps.push(Object.keys(packageInfo.dependencies??{}));
                 counter++;
             }
+            process.stdout.write('🎉\n');
             deps = Array.from(new Set(deps.flat()));
-            console.log(`    ┃${'    '.repeat(tab)}┗ ${this.packageName}依存関係を検索完了(${deps.length}依存)`);
+            process.stdout.write(`    ┃${'    '.repeat(tab)}┗ ${this.packageName}依存関係を検索完了(${deps.length}依存)\n`);
     
             for (let dep of deps) {
                 let depPkg = new packageController(dep);
