@@ -4,7 +4,7 @@ const readline = require('readline');
 
 async function main () {
     try {
-        const packSize = 1000; //zip化するサイズ default:1000000000(1GB)
+        const packSize = 1000000000; //zip化するサイズ default:1000000000(1GB)
 
         //outputsフォルダがあるか。なければエラー終了
         if (!await existsFileFolder('./outputs')) {

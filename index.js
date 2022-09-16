@@ -1,7 +1,11 @@
-const { packageController, existsFileFolder } = require('./util');
+const { packageController, existsFileFolder, Line } = require('./util');
 const fs = require('fs').promises;
+const { linePersonalToken } = require('./config.json');
 
 global.history = [];
+
+const line = new Line();
+line.setToken(linePersonalToken);
 
 async function main () {
     try {
@@ -41,16 +45,18 @@ async function main () {
         for (let p of DLPackages) {
             let info = await p.info();
             process.stdout.write(`    ┣ ${p.packageName}(バージョン数:${info.versions.length})のすべての依存関係を取得...\n`);
-            let deps = await p.getAllDeps(2);
+            await p.getAllDeps(2);
         }
 
         await fs.writeFile('./history.json', JSON.stringify(history));
 
         let end = performance.now();
-        process.stdout.write(`実行時間(ms) : `+ (end - start) + '\n');
+        process.stdout.write(`実行時間(ms) : ${end - start}\n`);
+        line.notify(`\n実行時間(ms) : ${end - start}\n`);
 
     } catch (error) {
-       console.error(error); 
+        line.notify(`\n${JSON.stringify(error, undefined, 2)}\n`);
+        console.error(error); 
     }
 }
 

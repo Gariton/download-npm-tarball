@@ -4,6 +4,8 @@ const fs = require('fs');
 const readline = require('readline');
 const archiver = require('archiver');
 const path = require('path')
+const { default: axios } = require('axios');
+const querystring = require('querystring');
 
 class packageController {
     constructor (packageName) {
@@ -100,8 +102,34 @@ async function zip (targetDir) {
     return;
 }
 
+const Line = function () {};
+Line.prototype.setToken = function (token) {
+    this.token = token;
+}
+Line.prototype.notify = function (message) {
+    if (this.token==undefined || this.token==null) {
+        console.error('undefined token');
+        return;
+    }
+    axios({
+        method: 'post',
+        url: 'https://notify-api.line.me/api/notify',
+        headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-type': 'application/x-www-form-urlencoded'
+        },
+        data: querystring.stringify({
+            message: message
+        })
+    })
+    .then(d=>d.data)
+    .catch(console.error);
+}
+
+
 module.exports = {
     packageController,
     existsFileFolder,
-    zip
+    zip,
+    Line
 }
