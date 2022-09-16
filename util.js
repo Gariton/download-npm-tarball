@@ -1,6 +1,9 @@
 const { execSync } = require('child_process');
-const fs = require('fs').promises;
+const fsPromise = require('fs').promises;
+const fs = require('fs');
 const readline = require('readline');
+const archiver = require('archiver');
+const path = require('path')
 
 class packageController {
     constructor (packageName) {
@@ -43,7 +46,7 @@ class packageController {
                     //バージョンごとに処理
                     this.download('./outputs', version);
                     history[this.packageName].versions.push(version);
-                    await fs.writeFile('./history.json', JSON.stringify(history));
+                    await fsPromise.writeFile('./history.json', JSON.stringify(history));
                 }
                 let done = Math.floor((counter/info.versions.length)*progressLength);
                 readline.cursorTo(process.stdout, 0);
@@ -71,7 +74,7 @@ class packageController {
 }
 
 async function existsFileFolder (path) {
-    return fs.stat(path)
+    return fsPromise.stat(path)
         .then(_ => {
             return true;
         })
@@ -80,7 +83,25 @@ async function existsFileFolder (path) {
         });
 }
 
+async function zip (targetDir) {
+    const zipPath = `${targetDir}.zip`;
+    const output = fs.createWriteStream(path.join(__dirname, zipPath));
+  
+    const archive = archiver('zip', {
+      zlib: { level: 9 }
+    });
+  
+    archive.pipe(output);
+  
+    archive.glob(path.join(targetDir, '*.tgz'));
+  
+    await archive.finalize();
+  
+    return;
+}
+
 module.exports = {
     packageController,
-    existsFileFolder
+    existsFileFolder,
+    zip
 }

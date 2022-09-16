@@ -1,2 +1,5 @@
 outputs
-history.json
+zip
+history*
+node_modules
+package-lock.json
